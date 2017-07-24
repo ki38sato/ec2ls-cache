@@ -1,0 +1,4 @@
+build/*
+vendor/*
+glide.lock
+.envrc
