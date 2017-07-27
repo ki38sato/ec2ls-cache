@@ -1,0 +1,6 @@
+package: github.com/ki38sato/ec2ls-cache
+import:
+  - package: github.com/urfave/cli
+  - package: github.com/aws/aws-sdk-go
+    version: ^v1.10.15
+  - package: github.com/mitchellh/go-homedir
