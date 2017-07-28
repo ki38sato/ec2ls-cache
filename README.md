@@ -10,11 +10,11 @@ CommandLine Option
 ---
 |option key|description|
 |---|---|
-|--updateCache, -u|read from AWS and store cache.|
 |--cachename|specify cachename. cache path is `~/.cache/ec2ls-cache/<cachename>`. default cachename is `out`|
+|--filters|use filters. see [aws document](https://docs.aws.amazon.com/sdk-for-go/api/service/ec2/#DescribeInstancesInput)|
 |--profile|specify aws credential profile|
 |--region|specify aws region|
-|--filters|use filters. see [aws document](https://docs.aws.amazon.com/sdk-for-go/api/service/ec2/#DescribeInstancesInput)|
+|--updateCache, -u|read from AWS and store cache.|
 
 Default Output (no configurable now)
 ---
@@ -40,7 +40,6 @@ $ ec2ls-cache -u --cachename prod --filters "instance-state-name=running" --filt
 
 FEATURE
 ---
-- --filters option
 - --columns option
 - --sortcolumn option
 - cache expired limit option?
