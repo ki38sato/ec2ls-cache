@@ -14,6 +14,7 @@ CommandLine Option
 |--cachename|specify cachename. cache path is `~/.cache/ec2ls-cache/<cachename>`. default cachename is `out`|
 |--profile|specify aws credential profile|
 |--region|specify aws region|
+|--filters|use filters. see [aws document](https://docs.aws.amazon.com/sdk-for-go/api/service/ec2/#DescribeInstancesInput)|
 
 Default Output (no configurable now)
 ---
@@ -23,12 +24,17 @@ Example Usage
 ---
 - Read from AWS and store cache.
 ```
-$ ec2ls-cache -u
+$ ec2ls-cache -u --cachename stage --profile yourProfile --region ap-northeast-1
 ```
 
 - Read from cache
 ```
-$ ec2ls-cache
+$ ec2ls-cache --cachename stage
+```
+
+- Use filters
+```
+$ ec2ls-cache -u --cachename prod --filters "instance-state-name=running" --filters "tag:Env=production"
 ```
 
 

@@ -8,9 +8,6 @@ import (
 )
 
 var (
-	defaultFilters = []string{
-		"instance-state-name=running",
-	}
 	defaultColumns = []string{
 		"tag:Name",
 		"instance-id",
@@ -30,7 +27,8 @@ type Ec2Info struct {
 
 func main() {
 
-	var profile, region, filters, columns, sortcolumn, cachename string
+	var profile, region, columns, sortcolumn, cachename string
+	var filters []string
 	var updateCache bool
 
 	app := cli.NewApp()
@@ -51,10 +49,9 @@ func main() {
 			Usage:       "update cache",
 			Destination: &updateCache,
 		},
-		cli.StringFlag{
-			Name:        "filters",
-			Usage:       "filters",
-			Destination: &filters,
+		cli.StringSliceFlag{
+			Name:  "filters",
+			Usage: "filters",
 		},
 		cli.StringFlag{
 			Name:        "columns",
@@ -81,13 +78,14 @@ func main() {
 		if cachename == "" {
 			cachename = defaultCacheName
 		}
+		filters = c.StringSlice("filters")
 
 		return nil
 	}
 
 	app.Run(os.Args)
 
-	ec2s, err := ec2list(profile, region, updateCache, cachename)
+	ec2s, err := ec2list(profile, region, updateCache, cachename, filters)
 	if err != nil {
 		log.Println(err.Error())
 		os.Exit(1)

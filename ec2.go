@@ -1,9 +1,15 @@
 package main
 
-import "github.com/aws/aws-sdk-go/service/ec2"
+import (
+	"fmt"
+	"strings"
 
-func findEc2s(profile string, region string) ([]Ec2Info, error) {
-	instances, err := findInstances(profile, region)
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/ec2"
+)
+
+func findEc2s(profile string, region string, filters []string) ([]Ec2Info, error) {
+	instances, err := findInstances(profile, region, filters)
 	if err != nil {
 		return nil, err
 	}
@@ -19,7 +25,7 @@ func findEc2s(profile string, region string) ([]Ec2Info, error) {
 	return infolist, nil
 }
 
-func findInstances(profile string, region string) ([]*ec2.Instance, error) {
+func findInstances(profile string, region string, filters []string) ([]*ec2.Instance, error) {
 	p := Params{}
 	if profile != "" {
 		p.profile = profile
@@ -34,9 +40,15 @@ func findInstances(profile string, region string) ([]*ec2.Instance, error) {
 
 	svc := ec2.New(sess)
 
-	// TODO: filters
 	// TODO: loop more than 1000
 	params := &ec2.DescribeInstancesInput{}
+	awsFilters, err := buildFilters(filters)
+	if err != nil {
+		return nil, err
+	}
+	if len(awsFilters) > 0 {
+		params.Filters = awsFilters
+	}
 	resp, err := svc.DescribeInstances(params)
 	if err != nil {
 		return nil, err
@@ -57,4 +69,27 @@ func findTagName(tags []*ec2.Tag) string {
 		}
 	}
 	return ""
+}
+
+func buildFilters(filters []string) ([]*ec2.Filter, error) {
+	// filters=[]string{"Name1=Value11","Name2=Value21,Value22"}
+	awsFilters := make([]*ec2.Filter, 0)
+	for _, f := range filters {
+		arr1 := strings.Split(f, "=")
+		if len(arr1) != 2 {
+			return nil, fmt.Errorf("filter:%s is invalid", f)
+		}
+		arr2 := strings.Split(arr1[1], ",")
+		values := make([]*string, 0)
+		for _, a := range arr2 {
+			values = append(values, aws.String(a))
+		}
+		awsFilter := &ec2.Filter{
+			Name:   aws.String(arr1[0]),
+			Values: values,
+		}
+
+		awsFilters = append(awsFilters, awsFilter)
+	}
+	return awsFilters, nil
 }
