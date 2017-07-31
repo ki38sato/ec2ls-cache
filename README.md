@@ -4,7 +4,7 @@ ec2ls-cache
 
 Why cache ?
 ---
-for MFA
+To avoid MFA input.
 
 CommandLine Option
 ---
@@ -16,10 +16,6 @@ CommandLine Option
 |--profile|specify aws credential profile|
 |--region|specify aws region|
 |--updateCache, -u|read from AWS and store cache.|
-
-Default Output (no configurable now)
----
-PrivateIP, InstanceID, TagName
 
 Example Usage
 ---
