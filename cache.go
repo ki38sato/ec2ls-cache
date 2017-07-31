@@ -8,14 +8,14 @@ import (
 	homedir "github.com/mitchellh/go-homedir"
 )
 
-func ec2list(profile string, region string, updateCache bool, cachename string, filters []string) ([]Ec2Info, error) {
+func ec2list(profile string, region string, updateCache bool, cachename string, filters []string, columns string) (map[string]interface{}, error) {
 	if updateCache {
-		ec2s, err := findEc2s(profile, region, filters)
+		cacheInfo, err := findEc2s(profile, region, filters, columns)
 		if err != nil {
 			return nil, err
 		}
 
-		writeCache(ec2s, cachename)
+		writeCache(cacheInfo, cachename)
 	}
 
 	return readFromCache(cachename)
@@ -29,7 +29,7 @@ func expandPath(cachename string) (string, error) {
 	return expath, nil
 }
 
-func readFromCache(cachename string) ([]Ec2Info, error) {
+func readFromCache(cachename string) (map[string]interface{}, error) {
 	expath, err := expandPath(cachename)
 	if err != nil {
 		return nil, err
@@ -39,15 +39,15 @@ func readFromCache(cachename string) ([]Ec2Info, error) {
 		return nil, err
 	}
 
-	var ec2s []Ec2Info
-	if err := json.Unmarshal(jsonBytes, &ec2s); err != nil {
+	var cacheInfo map[string]interface{}
+	if err := json.Unmarshal(jsonBytes, &cacheInfo); err != nil {
 		return nil, err
 	}
-	return ec2s, nil
+	return cacheInfo, nil
 }
 
-func writeCache(ec2s []Ec2Info, cachename string) error {
-	jsonBytes, err := json.Marshal(ec2s)
+func writeCache(cacheInfo map[string]interface{}, cachename string) error {
+	jsonBytes, err := json.Marshal(cacheInfo)
 	if err != nil {
 		return err
 	}
