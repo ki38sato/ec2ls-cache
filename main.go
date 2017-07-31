@@ -8,22 +8,11 @@ import (
 )
 
 var (
-	defaultColumns = []string{
-		"tag:Name",
-		"instance-id",
-		"private-ip",
-	}
+	defaultColumns   = "InstanceId"
 	emptyString      = "-"
 	cacheBasePath    = "~/.cache/ec2ls-cache/"
 	defaultCacheName = "out"
 )
-
-// Ec2Info is aws ec2 instance information.
-type Ec2Info struct {
-	Name      string `json:"name"`
-	ID        string `json:"id"`
-	PrivateIP string `json:"private_ip"`
-}
 
 func main() {
 
@@ -79,16 +68,19 @@ func main() {
 			cachename = defaultCacheName
 		}
 		filters = c.StringSlice("filters")
+		if columns == "" {
+			columns = defaultColumns
+		}
 
 		return nil
 	}
 
 	app.Run(os.Args)
 
-	ec2s, err := ec2list(profile, region, updateCache, cachename, filters)
+	cacheinfo, err := ec2list(profile, region, updateCache, cachename, filters, columns)
 	if err != nil {
 		log.Println(err.Error())
 		os.Exit(1)
 	}
-	output(ec2s)
+	output(cacheinfo)
 }

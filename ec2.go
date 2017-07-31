@@ -2,27 +2,34 @@ package main
 
 import (
 	"fmt"
+	"reflect"
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ec2"
 )
 
-func findEc2s(profile string, region string, filters []string) ([]Ec2Info, error) {
+func findEc2s(profile string, region string, filters []string, columns string) (map[string]interface{}, error) {
 	instances, err := findInstances(profile, region, filters)
 	if err != nil {
 		return nil, err
 	}
-	infolist := make([]Ec2Info, 0)
+
+	infolist := make([]map[string]interface{}, 0)
+
 	for _, i := range instances {
-		tagName := findTagName(i.Tags)
-		infolist = append(infolist, Ec2Info{
-			Name:      tagName,
-			ID:        *i.InstanceId,
-			PrivateIP: *i.PrivateIpAddress,
-		})
+		info := make(map[string]interface{})
+		for _, c := range strings.Split(columns, ",") {
+			setColumn(info, i, c)
+		}
+		infolist = append(infolist, info)
 	}
-	return infolist, nil
+
+	result := make(map[string]interface{})
+	result["instances"] = infolist
+	result["columns"] = columns
+
+	return result, nil
 }
 
 func findInstances(profile string, region string, filters []string) ([]*ec2.Instance, error) {
@@ -62,9 +69,37 @@ func findInstances(profile string, region string, filters []string) ([]*ec2.Inst
 	return instances, nil
 }
 
-func findTagName(tags []*ec2.Tag) string {
+func setColumn(info map[string]interface{}, i *ec2.Instance, columnName string) {
+	var columnValue string
+	if columnName == "tagAll" {
+		columnValue = findTagAll(i.Tags)
+	} else if strings.Index(columnName, "tag:") == 0 {
+		columnValue = findTagValue(columnName, i.Tags)
+	} else {
+		// TODO: check string field ?
+		r := reflect.ValueOf(i)
+		f := reflect.Indirect(r).FieldByName(columnName)
+		columnValue = fmt.Sprintf("%v", f.Elem())
+	}
+
+	info[columnName] = columnValue
+}
+
+func findTagAll(tags []*ec2.Tag) string {
+	taglist := make([]string, 0)
 	for _, t := range tags {
-		if *t.Key == "Name" {
+		taginfo := *t.Key + ":" + *t.Value
+		if taginfo != "" {
+			taglist = append(taglist, taginfo)
+		}
+	}
+	return strings.Join(taglist, ";")
+}
+
+func findTagValue(columnName string, tags []*ec2.Tag) string {
+	tagKey := strings.Split(columnName, ":")[1]
+	for _, t := range tags {
+		if *t.Key == tagKey {
 			return *t.Value
 		}
 	}
