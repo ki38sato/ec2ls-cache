@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION=0.0.1
+VERSION=$(cat ./VERSION)
 #PACKAGE="github.com/ki38sato/ec2ls-cache"
 
 go get -v github.com/Masterminds/glide

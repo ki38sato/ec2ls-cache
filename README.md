@@ -80,6 +80,7 @@ FEATURE
 ---
 - display Slices?
 - cache expired limit option?
+- no cache option?
 - build for windows?
 
 LICENSE
