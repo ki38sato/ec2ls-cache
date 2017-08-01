@@ -16,6 +16,8 @@ var (
 	defaultCacheName = "out"
 )
 
+var version string
+
 func main() {
 
 	var profile, region, columns, sortcolumn, cachename string
@@ -63,6 +65,7 @@ func main() {
 
 	app.Name = "ec2ls-cache"
 	app.Usage = ""
+	app.Version = version
 	app.Action = func(c *cli.Context) error {
 
 		if cachename == "" {
@@ -73,24 +76,25 @@ func main() {
 			columns = defaultColumns
 		}
 
+		// TODO: validate
+		err := validate(sortcolumn, columns)
+		if err != nil {
+			return err
+		}
+
+		cacheinfo, err := ec2list(profile, region, updateCache, cachename, filters, columns, sortcolumn)
+		if err != nil {
+			return err
+		}
+		output(cacheinfo)
+
 		return nil
 	}
 
-	app.Run(os.Args)
-
-	// TODO: validate
-	err := validate(sortcolumn, columns)
+	err := app.Run(os.Args)
 	if err != nil {
 		log.Println(err.Error())
-		os.Exit(1)
 	}
-
-	cacheinfo, err := ec2list(profile, region, updateCache, cachename, filters, columns, sortcolumn)
-	if err != nil {
-		log.Println(err.Error())
-		os.Exit(1)
-	}
-	output(cacheinfo)
 }
 
 func validate(sortcolumn string, columns string) error {
