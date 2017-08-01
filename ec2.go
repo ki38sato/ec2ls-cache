@@ -3,28 +3,41 @@ package main
 import (
 	"fmt"
 	"reflect"
+	"sort"
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ec2"
 )
 
-func findEc2s(profile string, region string, filters []string, columns string) (map[string]interface{}, error) {
+func findEc2s(profile string, region string, filters []string, columns string, sortcolumn string) (map[string]interface{}, error) {
 	instances, err := findInstances(profile, region, filters)
 	if err != nil {
 		return nil, err
 	}
 
+	// convert ec2.Instance to map[string]interface{}
 	infolist := make([]map[string]interface{}, 0)
 
 	for _, i := range instances {
 		info := make(map[string]interface{})
 		for _, c := range strings.Split(columns, ",") {
-			setColumn(info, i, c)
+			cv, err := findColumnValue(i, c)
+			if err != nil {
+				return nil, err
+			}
+			info[c] = cv
 		}
 		infolist = append(infolist, info)
 	}
 
+	if sortcolumn != "" {
+		sort.Slice(infolist, func(i, j int) bool {
+			return infolist[i][sortcolumn].(string) < infolist[j][sortcolumn].(string)
+		})
+	}
+
+	// set cacheinfo
 	result := make(map[string]interface{})
 	result["instances"] = infolist
 	result["columns"] = columns
@@ -69,20 +82,23 @@ func findInstances(profile string, region string, filters []string) ([]*ec2.Inst
 	return instances, nil
 }
 
-func setColumn(info map[string]interface{}, i *ec2.Instance, columnName string) {
+func findColumnValue(i *ec2.Instance, columnName string) (string, error) {
 	var columnValue string
-	if columnName == "tagAll" {
+	if columnName == "TagAll" {
 		columnValue = findTagAll(i.Tags)
-	} else if strings.Index(columnName, "tag:") == 0 {
+	} else if strings.Index(columnName, "Tag:") == 0 {
 		columnValue = findTagValue(columnName, i.Tags)
 	} else {
-		// TODO: check string field ?
 		r := reflect.ValueOf(i)
 		f := reflect.Indirect(r).FieldByName(columnName)
+		// check column value type
+		if err := validateColumnType(f, columnName); err != nil {
+			return "", err
+		}
 		columnValue = fmt.Sprintf("%v", f.Elem())
 	}
 
-	info[columnName] = columnValue
+	return columnValue, nil
 }
 
 func findTagAll(tags []*ec2.Tag) string {
@@ -104,6 +120,38 @@ func findTagValue(columnName string, tags []*ec2.Tag) string {
 		}
 	}
 	return ""
+}
+
+func validateColumnType(f reflect.Value, columnName string) error {
+	invalidTypeList := []reflect.Kind{
+		reflect.Invalid,
+		reflect.Complex64,
+		reflect.Complex128,
+		reflect.Array,
+		reflect.Chan,
+		reflect.Func,
+		reflect.Interface,
+		reflect.Map,
+		reflect.Slice,
+		reflect.Struct,
+		reflect.UnsafePointer,
+	}
+
+	for _, t := range invalidTypeList {
+		if f.Kind() == t {
+			return fmt.Errorf("column: %s is invalid type: %v", columnName, t)
+		}
+	}
+	for _, t := range invalidTypeList {
+		if f.Elem().Kind() == t {
+			return fmt.Errorf("column: %s is invalid type: %v", columnName, t)
+		}
+	}
+	if f.Elem().Kind() == reflect.Ptr {
+		return fmt.Errorf("column: %s is invalid type: %v", columnName, reflect.Ptr)
+	}
+
+	return nil
 }
 
 func buildFilters(filters []string) ([]*ec2.Filter, error) {
