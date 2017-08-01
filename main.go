@@ -1,8 +1,10 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
+	"strings"
 
 	"github.com/urfave/cli"
 )
@@ -63,7 +65,6 @@ func main() {
 	app.Usage = ""
 	app.Action = func(c *cli.Context) error {
 
-		// TODO: validate
 		if cachename == "" {
 			cachename = defaultCacheName
 		}
@@ -77,10 +78,33 @@ func main() {
 
 	app.Run(os.Args)
 
-	cacheinfo, err := ec2list(profile, region, updateCache, cachename, filters, columns)
+	// TODO: validate
+	err := validate(sortcolumn, columns)
+	if err != nil {
+		log.Println(err.Error())
+		os.Exit(1)
+	}
+
+	cacheinfo, err := ec2list(profile, region, updateCache, cachename, filters, columns, sortcolumn)
 	if err != nil {
 		log.Println(err.Error())
 		os.Exit(1)
 	}
 	output(cacheinfo)
+}
+
+func validate(sortcolumn string, columns string) error {
+	if sortcolumn != "" {
+		check := false
+		arr := strings.Split(columns, ",")
+		for _, c := range arr {
+			if sortcolumn == c {
+				check = true
+			}
+		}
+		if !check {
+			return fmt.Errorf("sortcolumn: %s is not in columns: %s", sortcolumn, columns)
+		}
+	}
+	return nil
 }

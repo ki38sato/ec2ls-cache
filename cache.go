@@ -8,9 +8,9 @@ import (
 	homedir "github.com/mitchellh/go-homedir"
 )
 
-func ec2list(profile string, region string, updateCache bool, cachename string, filters []string, columns string) (map[string]interface{}, error) {
+func ec2list(profile string, region string, updateCache bool, cachename string, filters []string, columns string, sortcolumn string) (map[string]interface{}, error) {
 	if updateCache {
-		cacheInfo, err := findEc2s(profile, region, filters, columns)
+		cacheInfo, err := findEc2s(profile, region, filters, columns, sortcolumn)
 		if err != nil {
 			return nil, err
 		}
