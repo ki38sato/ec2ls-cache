@@ -113,7 +113,7 @@ func findTagAll(tags []*ec2.Tag) string {
 }
 
 func findTagValue(columnName string, tags []*ec2.Tag) string {
-	tagKey := strings.Split(columnName, ":")[1]
+	tagKey := columnName[4:]
 	for _, t := range tags {
 		if *t.Key == tagKey {
 			return *t.Value
